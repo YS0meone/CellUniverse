@@ -15,8 +15,9 @@ public:
     std::string name;
 };
 
-class CellConfig {
+class CellConfig : public BaseConfig{
     // Abstract base class for cell configurations.
+    CellConfig(const YAML::node& node){}
 };
 
 class PerturbParams {
@@ -33,6 +34,11 @@ public:
         else {
             return mu;
         }
+    }
+    void parseParams(const YAML::Node& node) {
+        prob = node["prob"].as<double>();
+        mu = node["mu"].as<double>();
+        sigma = node["sigma"].as<double>();
     }
 };
 
