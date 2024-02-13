@@ -2,6 +2,8 @@
 #define BACILLI_H
 
 #include <string>
+#include <vector>
+
 
 class Bacilli : public Cell {
 private:
@@ -15,8 +17,8 @@ private:
 public:
     Bacilli(std::string name, double x, double y, double width, double length, double rotation, double split_alpha = 0, double opacity = 0);
     void _refresh();
-    void draw() override;
-    void draw_outline() override;
+    void draw(cv::Mat& image, SimulationConfig simulationConfig, cv::Mat* cellMap = nullptr, float z = 0) const override;
+    virtual void draw_outline(cv::Mat& image, cv::Scalar color, float z = 0) const override;
     void split(double alpha) override;
     void combine(Bacilli* cell) override;
     void simulated_region() override;

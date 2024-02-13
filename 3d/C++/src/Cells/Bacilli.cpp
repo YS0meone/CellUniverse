@@ -3,10 +3,11 @@
 #include <cmath>
 #include <algorithm>
 #include <stdexcept>
+#include "Bacilli.hpp"
 
 Bacilli::Bacilli(std::string name, double x, double y, double width, double length, double rotation, double split_alpha, double opacity)
     : name(name), _position(Vector(x, y, 0)), _width(width), _length(length), _rotation(rotation), _split_alpha(split_alpha), _opacity(opacity), _needs_refresh(true), dormant(false) {}
-}
+
 
 void Bacilli::_refresh() {
     Vector direction(cos(_rotation), sin(_rotation), 0);
@@ -25,7 +26,7 @@ void Bacilli::_refresh() {
     _needs_refresh = false;
 }
 
-vvoid Bacilli::draw(cv::Mat& image, cv::Mat& cell_map, bool is_cell, cv::Scalar background_color, cv::Scalar cell_color, std::map<std::string, std::string> simulation_config) {
+virtual void Bacilli::draw(cv::Mat& image, SimulationConfig simulationConfig, cv::Mat* cellMap, float z) const {
     if (dormant)
         return;
 
@@ -66,12 +67,12 @@ vvoid Bacilli::draw(cv::Mat& image, cv::Mat& cell_map, bool is_cell, cv::Scalar 
     cv::circle(tail_mask, cv::Point(_tail_center.x - left, _tail_center.y - top), _width / 2, cv::Scalar(255), -1);
 
     try {
-        std::string image_type = simulation_config["image.type"];
-        double diffraction_strength = std::stod(simulation_config["light.diffraction.strength"]);
-        double cell_opacity = (_opacity != "auto" && _opacity != "None" && _opacity != "") ? std::stod(_opacity) : std::stod(simulation_config["cell.opacity"]);
+        std::string image_type = simulationConfig["image.type"];
+        double diffraction_strength = std::stod(simulationConfig["light.diffraction.strength"]);
+        double cell_opacity = (_opacity != "auto" && _opacity != "None" && _opacity != "") ? std::stod(_opacity) : std::stod(simulationConfig["cell.opacity"]);
 
         if (image_type == "phaseContrast") {
-            if (!is_cell) {
+            if (cellMap != nullptr) {
                 mask.setTo(0);
                 body_mask.copyTo(mask);
                 head_mask.copyTo(mask);
@@ -108,10 +109,11 @@ vvoid Bacilli::draw(cv::Mat& image, cv::Mat& cell_map, bool is_cell, cv::Scalar 
             image(_region)[mask] += diffraction_strength;
 
             cv::Mat diffraction_mask = cv::Mat::zeros(image.size(), CV_8UC1);
-            diffraction_mask.setTo(background_color);
-            cell_map(_region)[mask] += 1;
-            cv::GaussianBlur(cell_map, diffraction_mask, cv::Size(0, 0), std::stod(simulation_config["light.diffraction.sigma"]));
-            diffraction_mask.setTo(cell_color + cell_opacity * diffraction_mask);
+            diffraction_mask.setTo(cv::Scalar(255, 255, 255));  // Assuming white background
+            cellMap(_region)[mask] += 1;
+            cv::GaussianBlur(*cellMap, diffraction_mask, cv::Size(0, 0), std::stod(simulationConfig["light.diffraction.sigma"]));
+            diffraction_mask.setTo(cv::Scalar(0, 0, 0));  // Assuming black color
+            diffraction_mask += cell_opacity * diffraction_mask;
             image(_region) = diffraction_mask;
         }
         else if (image_type == "binary") {
@@ -119,13 +121,13 @@ vvoid Bacilli::draw(cv::Mat& image, cv::Mat& cell_map, bool is_cell, cv::Scalar 
             body_mask.copyTo(mask);
             head_mask.copyTo(mask);
             tail_mask.copyTo(mask);
-            if (is_cell) {
+            if (cellMap != nullptr) {
                 image(_region)[mask] += 1.0;
-                cell_map(_region)[mask] += 1;
+                cellMap(_region)[mask] += 1;
             }
             else {
                 image(_region)[mask] -= 1.0;
-                cell_map(_region)[mask] -= 1;
+                cellMap(_region)[mask] -= 1;
             }
         }
     }
@@ -134,8 +136,8 @@ vvoid Bacilli::draw(cv::Mat& image, cv::Mat& cell_map, bool is_cell, cv::Scalar 
     }
 }
 
-void Bacilli::draw_outline(cv::Mat& image, cv::Scalar color) {
-    if (_needs_refresh)
+virtual void draw_outline(cv::Mat& image, cv::Scalar color, float z = 0) const {
+if (_needs_refresh)
         _refresh();
 
     cv::line(image, cv::Point(_tail_left.x, _tail_left.y), cv::Point(_head_left.x, _head_left.y), color);
@@ -151,6 +153,10 @@ void Bacilli::draw_outline(cv::Mat& image, cv::Scalar color) {
 }
 
 
+
+void Bacilli::draw_outline(cv::Mat& image, cv::Scalar color, float z) const
+{
+}
 
 std::pair<Bacilli*, Bacilli*> Bacilli::split(double alpha) {
     if (_needs_refresh)
