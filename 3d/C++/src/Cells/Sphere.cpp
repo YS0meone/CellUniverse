@@ -41,11 +41,6 @@ public:
     SphereParams(std::string name_val , double x_val, double y_val, double z_val, double radius_val)
         : CellParams{name_val}, x(x_val), y(y_val), z(z_val), radius(radius_val) {}
 
-    void parseParams(const YAML::Node& node) {
-        prob = node["prob"].as<double>();
-        mu = node["mu"].as<double>();
-        sigma = node["sigma"].as<double>();
-    }
 };
 
 class Sphere : public Cell {
