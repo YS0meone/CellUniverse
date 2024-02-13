@@ -35,6 +35,11 @@ public:
             return mu;
         }
     }
+    void parseParams(const YAML::Node& node) {
+        prob = node["prob"].as<double>();
+        mu = node["mu"].as<double>();
+        sigma = node["sigma"].as<double>();
+    }
 };
 
 class Cell {
