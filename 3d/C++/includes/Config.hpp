@@ -1,32 +1,57 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-#include "Cell.hpp"
-#include "ConfigTypes.hpp"
-
 #include <iostream>
 #include <fstream>
-#include "yaml-cpp/yaml.h"
 #include "Sphere.cpp"
 
-//Update 2/12:
-//move BaseConfig to ConfigType
-//remove templetes and replace by a new attribute CellType (char)
+std::map<std::string, std::string> parseConfig(const std::string& filename) {
+    auto ltrim = [](const std::string& s) -> std::string {
+        size_t start = s.find_first_not_of(" \t");
+        return (start == std::string::npos) ? "" : s.substr(start);
+    }; //used to remove first space
 
+    std::map<std::string, std::string> config;
+    std::ifstream file(filename);
+    std::string line;
 
-BaseConfig* loadConfig(const std::string& path) {
-    YAML::Node config = YAML::LoadFile(path);
-    BaseConfig* Basecf = new BaseConfig();
-    if (config["cellType"].as<std::string>() == "sphere") {
-        Basecf->CellType = 's';
-        return Basecf;
-    } else if (config["cellType"].as<std::string>() == "bacilli") {
-        Basecf->CellType = 'b';
-        return Basecf;
-    } else {
-        delete(Basecf);
-        throw std::invalid_argument("Invalid cell type: " + config["cellType"].as<std::string>());
+    while (getline(file, line)) {
+        line = ltrim(line);
+        if (line.empty() || line[0] == '#') continue;
+
+        std::istringstream is_line(line);
+        std::string key;
+        if (getline(is_line, key, ':')) {
+            std::string value;
+            if (getline(is_line, value)) {
+                config[key] = ltrim(value);
+            }
+        }
     }
+    return config;
+}
+
+std::unique_ptr<BaseConfig> loadConfig(const std::string& path) { //used unique ptr to prevent possible memory leak
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "Error: Unable to open file " << path << std::endl;
+        return nullptr;
+    }
+    auto config = parseConfig(path);
+	std::unique_ptr<BaseConfig> basecf = std::make_unique<BaseConfig>();
+
+        std::string cellTypeStr = config["cellType"];
+        if (cellTypeStr == "sphere") {
+            basecf->CellType = 's';
+        }
+        else if (cellTypeStr == "bacilli") {
+            basecf->CellType = 'b';
+        }
+        else {
+            std::cerr << "Invalid cell type: " << cellTypeStr << std::endl;
+            return nullptr;
+        }
+        return basecf;
 }
 
 #endif
