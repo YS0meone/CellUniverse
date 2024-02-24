@@ -1,4 +1,3 @@
-// Cell.hpp
 #ifndef CELL_HPP
 #define CELL_HPP
 
@@ -7,7 +6,8 @@
 #include <tuple>
 #include <unordered_map>
 #include <random>
-#include "configTypes.cpp"
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
 
 class CellParams {
     //The CellParams class stores the parameters of a particular cell.
@@ -15,9 +15,10 @@ public:
     std::string name;
 };
 
-class CellConfig : public BaseConfig{
+class CellConfig{
     // Abstract base class for cell configurations.
-    CellConfig(const YAML::node& node){}
+public:
+    virtual ~CellConfig() = default;
 };
 
 class PerturbParams {
@@ -35,20 +36,22 @@ public:
             return mu;
         }
     }
-    void parseParams(const YAML::Node& node) {
-        prob = node["prob"].as<double>();
-        mu = node["mu"].as<double>();
-        sigma = node["sigma"].as<double>();
-    }
+    //void parseParams(const YAML::Node& node) {
+    //    prob = node["prob"].as<double>();
+    //    mu = node["mu"].as<double>();
+    //    sigma = node["sigma"].as<double>();
+    //}
 };
+
+class SimulationConfig; //just for declaration in draw function
 
 class Cell {
     //The Cell class stores information about a particular cell.
 protected:
     CellParams paramClass;
-    CellConfig cellConfig; //?unsure
+    CellConfig cellConfig;
 public:
-    Cell(const CellParams& initProps) : paramClass(initProps) {}
+    Cell(const CellParams& initProps) : paramClass(initProps), cellConfig() {}
     Cell() {}
     virtual ~Cell() = default;
 
@@ -62,4 +65,5 @@ public:
     virtual std::pair<std::vector<float>, std::vector<float>> calculate_corners() const = 0;
     virtual std::pair<std::vector<float>, std::vector<float>> calculate_minimum_box(Cell& perturbed_cell) const = 0;
 };
+
 #endif
