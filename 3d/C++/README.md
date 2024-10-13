@@ -29,3 +29,5 @@
     ```
   - Wait for celluniverse to finish executing and you can check the result in the `output/` folder inside the current
   example
+
+- clone the repo and cd into the project folder
